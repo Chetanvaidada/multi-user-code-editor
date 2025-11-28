@@ -91,7 +91,7 @@ tredence/
 
 ### 1. Clone Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/Chetanvaidada/multi-user-code-editor.git
 cd tredence
 ```
 
@@ -155,7 +155,7 @@ Frontend will be available at `http://localhost:3000`
 
 ### Backend (.env)
 ```env
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/tredence
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/dbname
 ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 HOST=127.0.0.1
 PORT=8000
@@ -187,4 +187,17 @@ REACT_APP_WS_BASE=ws://127.0.0.1:8000
 - `PUT /rooms/{room_id}/language` - Update room language
 - `POST /autocomplete` - Get AI code suggestions
 - `WS /ws/{room_id}` - WebSocket connection for real-time collaboration
+
+## What I would improve with time
+
+1. Add proper GenAI(llm) integration for auto completion
+2. Add proper authentication
+3. Add proper authorization
+4. Add proper logging
+
+## Limitations
+
+1. Auto completion is only available for Python
+2. Not responsive
+
 
