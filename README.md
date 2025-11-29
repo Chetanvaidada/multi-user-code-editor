@@ -98,7 +98,7 @@ cd tredence
 ### 2. Database Setup
 Create a PostgreSQL database:
 ```sql
-CREATE DATABASE tredence;
+CREATE DATABASE {project_name};
 ```
 
 ### 3. Backend Setup
