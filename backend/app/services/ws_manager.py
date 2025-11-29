@@ -21,6 +21,7 @@ class RoomState:
         self._dirty: bool = False
         self._last_edit_ts: float = 0.0
         self._save_task: Optional[asyncio.Task] = None
+        self._loaded: bool = False  # Track if data has been loaded from DB
         # Track participants by WebSocket connection to handle duplicate client_ids
         # Map: WebSocket -> (client_id, name)
         self.connection_participants: Dict[WebSocket, tuple[str, str]] = {}
@@ -74,28 +75,47 @@ class WSManager:
         await websocket.accept()
         room.clients.add(websocket)
         
-        # Load persisted room data from database if this is the first client
-        # and the room state is empty (not yet loaded)
-        if len(room.clients) == 1 and not room.code and not room.meta.get("language"):
+        print(f"🔴 [Backend] Client connected to room {room_id}")
+        print(f"🔴 [Backend] Total clients now: {len(room.clients)}")
+        print(f"🔴 [Backend] Current room.code: {repr(room.code)}")
+        print(f"🔴 [Backend] Current room.meta: {room.meta}")
+        print(f"🔴 [Backend] Room already loaded: {room._loaded}")
+        
+        # Load persisted room data from database if not yet loaded
+        # Use _loaded flag instead of checking client count to handle multiple simultaneous connections
+        if not room._loaded:
+            print(f"🔴 [Backend] Loading from DB (first time)...")
             try:
                 async with AsyncSessionLocal() as session:
                     existing = await crud.get_room(session, room_id)
                     if existing:
+                        print(f"🔴 [Backend] Found in DB - code: {repr(existing.code)}, language: {existing.language}")
                         # Load persisted code and language
                         room.code = existing.code or ""
                         room.meta["language"] = existing.language or "python"
+                    else:
+                        print(f"🔴 [Backend] Room not found in DB, starting fresh")
+                    # Mark as loaded regardless of whether we found it in DB
+                    room._loaded = True
             except Exception as exc:
                 # Log error but continue - room will just start empty
                 print(f"[WSManager.connect] failed to load room {room_id}: {exc}")
+                # Still mark as loaded to prevent retry loops
+                room._loaded = True
+        else:
+            print(f"🔴 [Backend] Skipping DB load - already loaded")
         
         # send initial state to the connecting client
+        print(f"🔴 [Backend] Sending initial state: code={repr(room.code)}, meta={room.meta}")
         try:
             await websocket.send_text(json.dumps({"type": "state", "code": room.code, "meta": room.meta}))
             # also send the current participants list so the joining client sees everyone
             participants = self.get_participants_list(room_id)
             await websocket.send_text(json.dumps({"type": "presence_list", "participants": participants}))
-        except Exception:
+            print(f"🔴 [Backend] Initial state sent successfully")
+        except Exception as e:
             # Best-effort; don't fail connect if send fails
+            print(f"🔴 [Backend] Failed to send initial state: {e}")
             pass
 
     async def disconnect(self, room_id: str, websocket: WebSocket, client_id: Optional[str] = None, persist_on_disconnect: bool = True):
@@ -107,7 +127,7 @@ class WSManager:
         # If no clients left -> try to persist and cleanup
         if not room.clients:
             room.cancel_save_task()
-            if persist_on_disconnect and room._dirty:
+            if persist_on_disconnect:
                 # attempt one last persist (await it to increase chance of success)
                 await self._persist_room_now(room_id, room.code, room.meta.get("language"), room.meta.get("lastUpdatedBy"))
             # remove room from memory
