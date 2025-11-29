@@ -23,19 +23,12 @@ const LANGUAGE_OPTIONS = [
 const RoomPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
 
   const name = useAppSelector((s) => s.user.name);
   const storedClientId = useAppSelector((s) => s.user.clientId);
 
   // ensure clientId (derive synchronously for hook)
   const ensuredClientId = storedClientId ?? getOrCreateClientId();
-
-  // persist clientId into redux once on mount if not present
-  useEffect(() => {
-    if (!storedClientId) dispatch(setClientId(ensuredClientId));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // redirect if name missing (do in effect to keep hook order stable)
   useEffect(() => {
