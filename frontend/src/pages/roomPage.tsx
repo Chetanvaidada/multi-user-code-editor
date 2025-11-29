@@ -1,10 +1,9 @@
 // src/pages/RoomPage.tsx
 import React, { useRef, useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAppSelector, useAppDispatch } from "../store/hooks";
+import { useAppSelector } from "../store/hooks";
 import { useRoomSocket } from "../hooks/useRoomSocket";
 import { getOrCreateClientId } from "../utils/identity";
-import { setClientId } from "../features/user/userSlice";
 import { runCodeWithPiston } from "../services/piston";
 import RoomHeader from "../components/RoomHeader";
 import ParticipantList from "../components/ParticipantList";
